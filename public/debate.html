@@ -1,0 +1,29 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>AI審判の議論システム</title>
+    <link rel="stylesheet" href="style.css">
+</head>
+<body>
+    <div class="container">
+        <div id="chat-container">
+            <h1 id="debate-topic">議論：トピックを読み込んでいます...</h1>
+            <div id="chat-messages"></div>
+            <form id="chat-form">
+                <select id="player-select">
+                    <option value="A">プレイヤーA</option>
+                    <option value="B">プレイヤーB</option>
+                </select>
+                <input type="text" id="user-input" placeholder="メッセージを入力してください..." required>
+                <button type="submit" class="button">送信</button>
+            </form>
+            <button id="judge-button" class="button">AIによる審判</button>
+            <div id="result"></div>
+            <a href="index.html" class="button" style="margin-top: 20px; display: inline-block;">トピック一覧に戻る</a>
+        </div>
+    </div>
+    <script src="script.js"></script>
+</body>
+</html>

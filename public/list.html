@@ -1,0 +1,32 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>議論トピック一覧</title>
+    <link rel="stylesheet" href="styles.css">
+</head>
+<body>
+    <div id="topic-list-container">
+        <h1>議論トピック一覧</h1>
+        <button id="new-thread-btn" class="button">新しいスレッドを作成</button>
+        <div id="new-thread-form" style="display: none;">
+            <input type="text" id="new-topic-input" placeholder="新しいお題を入力してください">
+            <button id="create-thread-btn" class="button">作成</button>
+        </div>
+        <table id="topic-table">
+            <thead>
+                <tr>
+                    <th>トピック</th>
+                    <th>作成日</th>
+                    <th>アクション</th>
+                </tr>
+            </thead>
+            <tbody id="topic-list">
+                <!-- トピックリストはJavaScriptで動的に生成されます -->
+            </tbody>
+        </table>
+    </div>
+    <script src="list.js"></script>
+</body>
+</html>
