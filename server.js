@@ -20,17 +20,27 @@ const pool = mysql.createPool({
     queueLimit: 0
 });
 
+// フォーマット用関数
+function formatDate(date) {
+    const yyyy = date.getFullYear();
+    const mm = ('0' + (date.getMonth() + 1)).slice(-2); // 月を2桁に
+    const dd = ('0' + date.getDate()).slice(-2); // 日を2桁に
+    const hh = ('0' + date.getHours()).slice(-2); // 時を2桁に
+    const min = ('0' + date.getMinutes()).slice(-2); // 分を2桁に
+    const sec = ('0' + date.getSeconds()).slice(-2); // 秒を2桁に
+    return `${yyyy}/${mm}/${dd} ${hh}:${min}:${sec}`;
+}
+
 app.post('/create-topic', async (req, res) => {
     try {
         const { title } = req.body;
-        // 現在の日時を取得し、JSTに変換する
-        const now = new Date();
-        const created_at = now.toLocaleString('ja-JP', { timeZone: 'Asia/Tokyo' }).replace('/', '-').replace('/', '-').replace(' ', 'T');
+        const created_at = new Date(); // 現在日時を取得
+        const formattedDate = formatDate(created_at); // フォーマットされた日付
 
         const connection = await pool.getConnection();
         const [result] = await connection.execute(
             'INSERT INTO thread (title, created_at) VALUES (?, ?)',
-            [title, created_at]
+            [title, formattedDate]
         );
         connection.release();
 
@@ -38,7 +48,7 @@ app.post('/create-topic', async (req, res) => {
             success: true, 
             id: result.insertId,
             title: title,
-            date: created_at
+            date: formattedDate // フォーマットされた日付を返す
         });
     } catch (error) {
         console.error('Error creating topic:', error);
@@ -52,49 +62,18 @@ app.get('/topics', async (req, res) => {
         const [rows] = await connection.execute('SELECT * FROM thread ORDER BY created_at DESC');
         connection.release();
 
-        // JSTに変換
-        const topics = rows.map(row => ({
-            ...row,
-            created_at: new Date(row.created_at).toLocaleString('ja-JP', { timeZone: 'Asia/Tokyo' })
-        }));
+        // フォーマットされた日付をレスポンスとして返す
+        const formattedRows = rows.map(row => {
+            return {
+                ...row,
+                created_at: formatDate(new Date(row.created_at)) // 作成日をフォーマット
+            };
+        });
 
-        res.json(topics);
+        res.json(formattedRows);
     } catch (error) {
         console.error('Error fetching topics:', error);
         res.status(500).json({ message: 'トピックの取得に失敗しました' });
-    }
-});
-
-// Gemini APIの設定
-const genAI = new GoogleGenerativeAI('AIzaSyCqDC2XtcMYTI3NLXx2gD_krEd3YIYC1YQ');
-const model = genAI.getGenerativeModel({ model: "gemini-pro" });
-
-app.get('/', (req, res) => {
-    res.sendFile(path.join(__dirname, 'public', 'index.html'));
-});
-
-app.post('/judge', async (req, res) => {
-    try {
-        const { chatHistory, topic } = req.body;
-        const prompt = 
-            `次の議論を分析し、客観的に勝者を判断してください。議論のテーマは「${topic}」です。
-            プレイヤーAとプレイヤーBの主張を評価し、より説得力のある議論を展開した方を勝者としてください。
-            引き分けの場合は「引き分け」と判断してください。
-            チャット履歴:
-            ${chatHistory.map(msg => `プレイヤー${msg.player}: ${msg.message}`).join('\n')}
-
-            判断結果を以下の形式で返し、勝者を述べた後は改行を挟んでください：
-            勝者: [プレイヤーA or プレイヤーB or 引き分け] 
-            理由: [簡潔な説明]`
-        ;
-
-        const result = await model.generateContent(prompt);
-        const judgement = result.response.text();
-
-        res.json({ result: judgement });
-    } catch (error) {
-        console.error('Error:', error);
-        res.status(500).json({ error: 'Internal server error' });
     }
 });
 

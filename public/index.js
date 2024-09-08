@@ -33,7 +33,6 @@ document.addEventListener('DOMContentLoaded', () => {
                     newTopicInput.value = '';
                     newThreadForm.style.display = 'none';
                 } else {
-                    console.error('Create topic failed:', data.message); // エラーメッセージをコンソールに出力
                     alert('トピックの作成に失敗しました');
                 }
             } catch (error) {
@@ -43,7 +42,6 @@ document.addEventListener('DOMContentLoaded', () => {
         }
     });
 
-    async function fetchTopics() {
         try {
             const response = await fetch('/topics');
             topics = await response.json();
@@ -60,35 +58,69 @@ document.addEventListener('DOMContentLoaded', () => {
             const row = document.createElement('tr');
             row.innerHTML = `
                 <td>${topic.title}</td>
-                <td>${topic.created_at.replace(' ', 'T').replace('-', '/').replace('-', '/').replace('T', ' ').slice(0, 19)}</td>
+                <td>${topic.created_at}</td>
                 <td>
                     <a href="/debate.html?topic=${topic.id}" class="button">議論に参加</a>
                     <button class="button delete-btn" data-id="${topic.id}">削除</button>
                 </td>
             `;
             topicList.appendChild(row);
-    
-            // 削除ボタンにイベントリスナーを追加
-            document.querySelectorAll('.delete-btn').forEach(btn => {
-                btn.addEventListener('click', (e) => {
-                    const topicId = e.target.getAttribute('data-id');
-                    deleteTopic(topicId);
-                });
-            });
+        });
+
+        // 削除ボタンにイベントリスナーを追加
+        document.querySelectorAll('.delete-btn').forEach(btn => {
+            btn.removeEventListener('click', handleDeleteClick); // 既存のリスナーを削除
+            btn.addEventListener('click', handleDeleteClick); // 新しいリスナーを追加
         });
     }
-    
 
-    function deleteTopic(topicId) {
-        // 削除機能の実装（サーバーサイドの実装が必要）
+    function handleDeleteClick(e) {
+        const topicId = e.target.getAttribute('data-id');
+        deleteTopic(topicId);
+    }
+
+    async function deleteTopic(topicId) {
         if (confirm('このスレッドを削除してもよろしいですか？')) {
-            // 削除のAPIコールをここに実装
-            console.log('トピックを削除:', topicId);
-            // 成功したら以下を実行
-            topics = topics.filter(topic => topic.id !== parseInt(topicId));
-            renderTopics();
+            try {
+                const response = await fetch(`/delete-topic/${topicId}`, {
+                    method: 'DELETE',
+                });
+                const data = await response.json();
+                if (data.success) {
+                    // トピックを削除してリストを再描画
+                    topics = topics.filter(topic => topic.id !== parseInt(topicId));
+                    renderTopics();
+                } else {
+                    alert(data.message || 'トピックの削除に失敗しました');
+                }
+            } catch (error) {
+                console.error('Error:', error);
+                alert('エラーが発生しました');
+            }
         }
     }
 
+    function renderTopics() {
+        topicList.innerHTML = '';
+        topics.forEach(topic => {
+            const row = document.createElement('tr');
+            row.innerHTML = `
+                <td>${topic.title}</td>
+                <td>${topic.created_at}</td>
+                <td>
+                    <a href="/debate.html?topic=${topic.id}" class="button">議論に参加</a>
+                    <button class="button delete-btn" data-id="${topic.id}">削除</button>
+                </td>
+            `;
+            topicList.appendChild(row);
+        });
+
+        document.querySelectorAll('.delete-btn').forEach(btn => {
+            btn.removeEventListener('click', handleDeleteClick);
+            btn.addEventListener('click', handleDeleteClick);
+        });
+    }
+
+    // Fetch and render topics on page load
     fetchTopics();
 });
