@@ -42,6 +42,7 @@ document.addEventListener('DOMContentLoaded', () => {
         }
     });
 
+    async function fetchTopics() {
         try {
             const response = await fetch('/topics');
             topics = await response.json();
@@ -61,16 +62,15 @@ document.addEventListener('DOMContentLoaded', () => {
                 <td>${topic.created_at}</td>
                 <td>
                     <a href="/debate.html?topic=${topic.id}" class="button">議論に参加</a>
-                    <button class="button delete-btn" data-id="${topic.id}">削除</button>
+                    ${[1, 2, 3, 4, 5].includes(topic.id) ? '' : `<button class="button delete-btn" data-id="${topic.id}">削除</button>`}
                 </td>
             `;
             topicList.appendChild(row);
         });
 
-        // 削除ボタンにイベントリスナーを追加
         document.querySelectorAll('.delete-btn').forEach(btn => {
-            btn.removeEventListener('click', handleDeleteClick); // 既存のリスナーを削除
-            btn.addEventListener('click', handleDeleteClick); // 新しいリスナーを追加
+            btn.removeEventListener('click', handleDeleteClick);
+            btn.addEventListener('click', handleDeleteClick);
         });
     }
 
@@ -100,27 +100,5 @@ document.addEventListener('DOMContentLoaded', () => {
         }
     }
 
-    function renderTopics() {
-        topicList.innerHTML = '';
-        topics.forEach(topic => {
-            const row = document.createElement('tr');
-            row.innerHTML = `
-                <td>${topic.title}</td>
-                <td>${topic.created_at}</td>
-                <td>
-                    <a href="/debate.html?topic=${topic.id}" class="button">議論に参加</a>
-                    <button class="button delete-btn" data-id="${topic.id}">削除</button>
-                </td>
-            `;
-            topicList.appendChild(row);
-        });
-
-        document.querySelectorAll('.delete-btn').forEach(btn => {
-            btn.removeEventListener('click', handleDeleteClick);
-            btn.addEventListener('click', handleDeleteClick);
-        });
-    }
-
-    // Fetch and render topics on page load
     fetchTopics();
 });

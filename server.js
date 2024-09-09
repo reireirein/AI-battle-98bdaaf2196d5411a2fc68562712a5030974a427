@@ -1,3 +1,5 @@
+require('dotenv').config(); // 追加
+
 const express = require('express');
 const mysql = require('mysql2/promise');
 const bodyParser = require('body-parser');
@@ -74,6 +76,58 @@ app.get('/topics', async (req, res) => {
     } catch (error) {
         console.error('Error fetching topics:', error);
         res.status(500).json({ message: 'トピックの取得に失敗しました' });
+    }
+});
+
+app.delete('/delete-topic/:id', async (req, res) => {
+    try {
+        const topicId = req.params.id;
+        const connection = await pool.getConnection();
+        const [result] = await connection.execute('DELETE FROM thread WHERE id = ?', [topicId]);
+        connection.release();
+
+        if (result.affectedRows > 0) {
+            res.json({ success: true });
+        } else {
+            res.status(404).json({ success: false, message: 'トピックが見つかりません' });
+        }
+    } catch (error) {
+        console.error('Error deleting topic:', error);
+        res.status(500).json({ success: false, message: 'トピックの削除に失敗しました' });
+    }
+});
+
+const genAI = new GoogleGenerativeAI(process.env.GOOGLE_API_KEY);
+const model = genAI.getGenerativeModel({ model: "gemini-pro" });
+
+app.get('/', (req, res) => {
+    res.sendFile(path.join(__dirname, 'public', 'index.html'));
+});
+
+app.post('/judge', async (req, res) => {
+    try {
+        const { chatHistory, topic } = req.body;
+        const prompt = `
+            次の議論を分析し、客観的に勝者を判断してください。議論のテーマは「${topic}」です。
+            プレイヤーAとプレイヤーBの主張を評価し、より説得力のある議論を展開した方を勝者としてください。
+            引き分けの場合は「引き分け」と判断してください。
+            チャット履歴:
+            ${chatHistory.map(msg => `プレイヤー${msg.player}: ${msg.message}`).join('\n')}
+
+            判断結果を以下の形式で返し、勝者を述べた後は改行を挟んでください：
+            勝者: [プレイヤーA or プレイヤーB or 引き分け] 
+            理由: [簡潔な説明]
+        `;
+
+        const result = await model.generateContent(prompt);
+
+        // `text` 関数を呼び出して結果を取得
+        const judgement = await result.response.text();
+
+        res.json({ result: judgement });
+    } catch (error) {
+        console.error('Error:', error);
+        res.status(500).json({ error: '内部サーバーエラーが発生しました' });
     }
 });
 
